@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InvestFlow Pro | Finanças em Foco</title>
+  
+  <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22InvestFlow%20Pro%22,%22short_name%22:%22InvestFlow%22,%22start_url%22:%22index.html%22,%22display%22:%22standalone%22,%22background_color%22:%22#0f172a%22,%22theme_color%22:%22#fbbf24%22,%22icons%22:[{%22src%22:%22https://cdn-icons-png.flaticon.com/512/2452/2452194.png%22,%22sizes%22:%22512x512%22,%22type%22:%22image/png%22}]}">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: #f8fafc; overflow-x: hidden; }
+        .card { background: #1e293b; border: 1px solid #334155; }
+        .input-field { background: #0b1222; border: 1px solid #1e293b; transition: all 0.2s; color: white; font-weight: 600; }
+        .input-field:focus { border-color: #fbbf24; outline: none; }
+        .brand-color { color: #fbbf24; } 
+        .bg-brand { background-color: #fbbf24; }
+        .bar-grow { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        /* Tooltip de Ajuda */
+        .tooltip { position: relative; display: inline-block; }
+        .tooltip .tooltiptext {
+            visibility: hidden; width: 160px; background-color: #0b1222; color: #fff;
+            text-align: center; border-radius: 8px; padding: 8px; position: absolute;
+            z-index: 50; bottom: 125%; left: 50%; margin-left: -80px; opacity: 0;
+            transition: opacity 0.3s; font-size: 10px; border: 1px solid #fbbf24; pointer-events: none;
+        }
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+
+        #modalPrivacidade { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+        #modalPrivacidade.active { display: flex; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-xl mx-auto">
+        <header class="mb-6 flex justify-between items-start">
+            <div>
+                <h1 class="text-2xl font-black tracking-tighter uppercase">
+                    <span class="brand-color">Invest</span><span>Flow</span> 
+                    <span class="text-[10px] bg-brand text-black px-2 py-0.5 rounded ml-1 tracking-widest">PRO</span>
+                </h1>
+                <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-1">Canal Finanças em Foco</p>
+            </div>
+            <div class="bg-slate-800 p-2 rounded-xl border border-slate-700">
+                <i data-lucide="shield-check" class="w-5 brand-color"></i>
+            </div>
+        </header>
+
+        <div class="card p-6 rounded-3xl space-y-5 mb-6">
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 mb-2 uppercase">Ticker (Ex: PETR4)</label>
+                <input type="text" id="ticker" oninput="playPop()" placeholder="CÓDIGO" class="input-field w-full p-4 rounded-2xl uppercase font-black text-brand">
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 mb-2 flex items-center gap-1 uppercase">
+                        LPA 
+                        <div class="tooltip"><i data-lucide="help-circle" class="w-3 opacity-50"></i><span class="tooltiptext">Lucro por ação dos últimos 12 meses.</span></div>
+                    </label>
+                    <input type="text" id="lpa" oninput="playPop()" class="input-field w-full p-4 rounded-2xl" placeholder="0,00">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 mb-2 uppercase">Crescimento %</label>
+                        <input type="text" id="crescimento" oninput="playPop()" class="input-field w-full p-4 rounded-2xl" placeholder="8">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 mb-2 uppercase">WACC %</label>
+                        <input type="text" id="wacc" oninput="playPop()" class="input-field w-full p-4 rounded-2xl" placeholder="12">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 mb-2 uppercase">Preço Mercado Atual</label>
+                    <input type="text" id="precoAtual" oninput="playPop()" class="input-field w-full p-4 rounded-2xl" placeholder="0,00">
+                </div>
+
+                <button onclick="calcularValuation(); playPop()" class="w-full bg-brand hover:opacity-90 text-black py-5 rounded-2xl font-black text-xs tracking-widest transition-all uppercase shadow-lg shadow-yellow-900/20">
+                    Analisar Valuation
+                </button>
+            </div>
+        </div>
+
+        <div id="resultadoArea" class="hidden mb-10">
+            <div class="card p-8 rounded-[40px] relative overflow-hidden border-none shadow-2xl bg-slate-800/40">
+                <div id="statusBadge" class="absolute top-0 right-0 px-4 py-2 rounded-bl-2xl font-black text-[9px] uppercase"></div>
+                <h3 class="text-slate-400 text-xs font-bold uppercase mb-2">Valor Justo Estimado</h3>
+                <div id="vjCor" class="text-7xl font-black mb-6 flex items-baseline gap-2">
+                    <span class="text-2xl font-light opacity-80">R$</span> <span id="vjValor">0.00</span>
+                </div>
+                
+                <div class="space-y-5 border-t border-white/5 pt-6">
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-[10px] font-black uppercase text-slate-500">
+                            <span>Preço Mercado</span> <span id="bar-pm-text">R$ 0,00</span>
+                        </div>
+                        <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+                            <div id="bar-pm" class="bar-grow bg-slate-500 h-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-[10px] font-black uppercase brand-color">
+                            <span>Valor Justo Alpha</span> <span id="bar-vj-text">R$ 0,00</span>
+                        </div>
+                        <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+                            <div id="bar-vj" class="bar-grow bg-brand h-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <div class="flex justify-between items-center mb-6 px-2">
+                <h3 class="text-[10px] font-black uppercase tracking-[2px] text-slate-500 flex items-center gap-2">
+                    <i data-lucide="history" class="w-3"></i> Histórico
+                </h3>
+                <button onclick="limparTudo(); playPop()" class="text-[9px] font-black text-red-500 uppercase">Limpar Tudo</button>
+            </div>
+            <div class="space-y-3" id="listaHistorico"></div>
+        </div>
+
+        <footer class="mt-16 mb-8 text-center border-t border-slate-800/50 pt-8">
+            <button onclick="toggleModal(); playPop()" class="text-[10px] font-bold text-slate-600 hover:text-brand uppercase tracking-[3px]">Privacidade & Termos</button>
+        </footer>
+    </div>
+
+    <div id="modalPrivacidade">
+        <div class="card max-w-sm w-full p-8 rounded-[32px] border-slate-700">
+            <h2 class="text-lg font-black brand-color mb-4 uppercase">Privacidade</h2>
+            <p class="text-[11px] text-slate-400 leading-relaxed mb-6">Seus dados de análise são salvos localmente no seu telemóvel e não são enviados para nenhum servidor externo.</p>
+            <button onclick="toggleModal()" class="w-full bg-brand text-black py-4 rounded-2xl font-black text-xs uppercase">Fechar</button>
+        </div>
+    </div>
+
+    <script>
+        // INICIALIZAÇÃO
+        lucide.createIcons();
+        let historico = JSON.parse(localStorage.getItem('investflow_v3')) || [];
+
+        // ÁUDIO POP (Sintetizado para não precisar de ficheiro externo)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playPop() {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine'; osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function toggleModal() { document.getElementById('modalPrivacidade').classList.toggle('active'); }
+
+        function calcularValuation() {
+            const ticker = document.getElementById('ticker').value.toUpperCase() || 'ATIVO';
+            const lpa = parseFloat(document.getElementById('lpa').value.replace(',', '.'));
+            const pm = parseFloat(document.getElementById('precoAtual').value.replace(',', '.'));
+            const g = (parseFloat(document.getElementById('crescimento').value) || 0) / 100;
+            const r = (parseFloat(document.getElementById('wacc').value) || 0) / 100;
+
+            if (isNaN(lpa) || isNaN(pm)) return alert("Por favor, preencha o LPA e o Preço.");
+
+            const v5 = lpa * ((1 - Math.pow((1 + g) / (1 + r), 5)) / (r - g));
+            const vt = ((lpa * Math.pow(1 + g, 5) * 1.03) / (r - 0.03)) / Math.pow(1 + r, 5);
+            const vj = v5 + vt;
+            const margem = ((vj - pm) / vj) * 100;
+
+            document.getElementById('resultadoArea').classList.remove('hidden');
+            renderResultado(vj, pm, margem);
+            salvarHistorico(ticker, vj, pm, margem);
+        }
+
+        function renderResultado(vj, pm, margem) {
+            document.getElementById('vjValor').innerText = vj.toFixed(2);
+            document.getElementById('bar-pm-text').innerText = "R$ " + pm.toFixed(2);
+            document.getElementById('bar-vj-text').innerText = "R$ " + vj.toFixed(2);
+
+            const maxVal = Math.max(vj, pm) * 1.1;
+            document.getElementById('bar-pm').style.width = (pm / maxVal * 100) + "%";
+            document.getElementById('bar-vj').style.width = (vj / maxVal * 100) + "%";
+
+            const badge = document.getElementById('statusBadge');
+            const color = document.getElementById('vjCor');
+            
+            if (margem > 20) {
+                badge.className = "absolute top-0 right-0 px-4 py-2 rounded-bl-2xl font-black text-[9px] uppercase bg-green-500 text-green-950";
+                badge.innerText = "Subvalorizada";
+                color.className = "text-7xl font-black mb-6 flex items-baseline gap-2 text-green-500";
+            } else if (margem > 0) {
+                badge.className = "absolute top-0 right-0 px-4 py-2 rounded-bl-2xl font-black text-[9px] uppercase bg-yellow-500 text-yellow-950";
+                badge.innerText = "Preço Justo";
+                color.className = "text-7xl font-black mb-6 flex items-baseline gap-2 text-yellow-500";
+            } else {
+                badge.className = "absolute top-0 right-0 px-4 py-2 rounded-bl-2xl font-black text-[9px] uppercase bg-red-500 text-red-950";
+                badge.innerText = "Supervalorizada";
+                color.className = "text-7xl font-black mb-6 flex items-baseline gap-2 text-red-500";
+            }
+        }
+
+        function salvarHistorico(ticker, vj, pm, margem) {
+            historico.unshift({ ticker, vj: vj.toFixed(2), pm: pm.toFixed(2), margem: margem.toFixed(1) });
+            if (historico.length > 5) historico.pop();
+            localStorage.setItem('investflow_v3', JSON.stringify(historico));
+            renderHistorico();
+        }
+
+        function limparTudo() {
+            if(confirm("Deseja apagar o histórico?")) {
+                historico = [];
+                localStorage.removeItem('investflow_v3');
+                renderHistorico();
+            }
+        }
+
+        function renderHistorico() {
+            const lista = document.getElementById('listaHistorico');
+            lista.innerHTML = historico.map((h, i) => `
+                <div class="card p-5 rounded-2xl flex justify-between items-center bg-slate-800/20 border-slate-800/40 border-l-4 ${h.margem > 0 ? 'border-l-green-500' : 'border-l-red-500'}">
+                    <div class="flex items-center gap-4">
+                        <div class="font-black brand-color text-sm">${h.ticker}</div>
+                        <div class="text-xs font-bold text-white">R$ ${h.vj}</div>
+                    </div>
+                    <div class="text-sm font-black ${h.margem > 0 ? 'text-green-500' : 'text-red-500'}">${h.margem}%</div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // SERVICE WORKER INTEGRADO (SIMULADO PARA FACILITAR)
+        if ('serviceWorker' in navigator) {
+            // Criamos um sw.js virtual para o navegador permitir instalação
+            const swCode = `self.addEventListener('fetch', function(event) {});`;
+            const blob = new Blob([swCode], {type: 'application/javascript'});
+            const swUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(swUrl).catch(() => {});
+        }
+
+        renderHistorico();
+    </script>
+</body>
+</html>
